@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+  </head>
+  <body>
+  	<div>
+  	{% if error != "" %}
+  		<script>
+  			alert("{{error}}");
+  		</script>
+  	{% endif %}
+	{% if mode == True %}
+		<input type="checkbox" id="turn" checked>
+		<label for="turn">Application is Up.</label>
+	{% else %}
+		<input type="checkbox" id="turn">
+		<label for="turn">Application is Down.</label>
+	{% endif %}
+    </div>
+	<font color={{color}}>Service state is {{status}}</font>
+		<div>
+			<form action="/start">
+				<input type="submit" value="Start">
+			</form>
+    	</div>
+    	<div>
+    		<form action="/reboot">
+				<input type="submit" value="Reboot">
+			</form>
+    	</div>
+    	<div>
+    		<form action="/stop">
+				<input type="submit" value="Shutdown">
+			</form>
+    	</div>
+  </body>
+  <script>
+	$("#turn").change(function(){
+		$.get("/change");
+		location.href = "/";
+	});
+  </script>
+</html>
+
+
