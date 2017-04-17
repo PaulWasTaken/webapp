@@ -1,9 +1,9 @@
 import aiohttp_jinja2
 import jinja2
-import subprocess
 import json
-from os import devnull
+import subprocess
 from aiohttp import web
+from os import devnull
 from statuses import Status, ReturnCode, Commands
 
 
@@ -86,19 +86,21 @@ class WebApp(web.Application):
                     "sc {command} {service}".format(
                         command=command, service=self.service),
                     shell=True, stdout=temp, stderr=temp).returncode)
-                if return_code is ReturnCode.Ok or \
-                   return_code is ReturnCode.AlreadyStarted or \
-                   return_code is ReturnCode.AlreadyStopped:
+                if return_code in [ReturnCode.Ok, ReturnCode.AlreadyStarted,
+                                   ReturnCode.AlreadyStopped]:
                     self.service_status = WebApp.map_name[command]
                 elif return_code == ReturnCode.AccessDenied:
-                    self.error = "You should run the script with administrator rights."
+                    self.error = "You should run the script " \
+                                 "with administrator rights."
                 elif return_code == ReturnCode.IsBusy:
-                    self.error = "The service is busy. Please, wait a little bit."
+                    self.error = "The service is busy. " \
+                                 "Please, wait a little bit."
                 else:
                     self.service_status = Status.Unknown    # For the future needs
             except ValueError as e:
                 self.error = "Unknown return code."
 
 
-app = WebApp("browser")
-web.run_app(app, host='localhost', port=8080)
+if __name__ == "__main__":
+    app = WebApp("browser")
+    web.run_app(app, host='localhost', port=8080)
