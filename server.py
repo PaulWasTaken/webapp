@@ -85,7 +85,7 @@ class WebApp(web.Application):
                 return_code = ReturnCode(subprocess.run(
                     "sc {command} {service}".format(
                         command=command, service=self.service),
-                    shell=True, stdout=temp, stderr=temp).returncode)
+                    stdout=temp, stderr=temp).returncode)
                 if return_code in [ReturnCode.Ok, ReturnCode.AlreadyStarted,
                                    ReturnCode.AlreadyStopped]:
                     self.service_status = WebApp.map_name[command]
