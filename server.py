@@ -123,7 +123,8 @@ class WebApp(web.Application):
                     return
                 self.check_execution()
             except ValueError:
-                self.notification = "Unknown return code. Please, try again."
+                self.notification = "Unknown return code: {}. Please, " \
+                                    "try again.".format(return_code)
                 self.service_status = Status.Unknown
 
     def check_execution(self):
