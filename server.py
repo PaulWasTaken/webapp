@@ -115,12 +115,16 @@ class WebApp(web.Application):
         with open(devnull, 'w') as temp:
             if self.service_status == WebApp.command_attrib[command].expected:
                 return
-            return_code = ReturnCode(run("sc {command} {service}".format(
-                command=command.name, service=self.service),
-                stdout=temp, stderr=temp).returncode)
-            if not self.is_valid_code(return_code):
-                return
-            self.check_execution()
+            try:
+                return_code = ReturnCode(run("sc {command} {service}".format(
+                    command=command.name, service=self.service),
+                    stdout=temp, stderr=temp).returncode)
+                if not self.is_valid_code(return_code):
+                    return
+                self.check_execution()
+            except ValueError:
+                self.notification = "Unknown return code. Please, try again."
+                self.service_status = Status.Unknown
 
     def check_execution(self):
         try:
