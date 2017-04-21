@@ -54,11 +54,8 @@ class WebApp(web.Application):
     async def base_handler(self, request):
         parameters = request.rel_url.query
         self.set_service_status()
-        try:
-            parameters['mode']
+        if "mode" in parameters:
             self.mode_handler()
-        except KeyError:
-            pass
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
