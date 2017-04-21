@@ -122,9 +122,9 @@ class WebApp(web.Application):
                 if not self.is_valid_code(return_code):
                     return
                 self.check_execution()
-            except ValueError:
+            except ValueError as e:
                 self.notification = "Unknown return code: {}. Please, " \
-                                    "try again.".format(return_code)
+                                    "try again.".format(e)
                 self.service_status = Status.Unknown
 
     def check_execution(self):
