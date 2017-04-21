@@ -10,6 +10,7 @@ from os import devnull
 from re import search
 from statuses import Status, ReturnCode, Commands
 from subprocess import run, PIPE
+from sys import platform, exit
 
 CommandAttrib = namedtuple("CommandAttrib", "expected, in_progress")
 
@@ -160,6 +161,9 @@ if __name__ == "__main__":
     parser = create_parser()
     settings = parser.parse_args()
     app = WebApp(settings.service)
+    if platform != "win32":
+        print("This app works only for Windows.")
+        exit()
     try:
         web.run_app(app, port=settings.port)
     except OSError:
