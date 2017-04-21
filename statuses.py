@@ -2,17 +2,18 @@ from enum import Enum
 
 
 class Status(Enum):
-    Up = 1
-    Down = 2
-    Unknown = 3
+    Unknown = 0
+    Stopped = 1
+    StartPending = 2
+    StopPending = 3
+    Running = 4
 
 
 class ReturnCode(Enum):
     Ok = 0
     AccessDenied = 5
-    AlreadyStarted = 1056
+    DoesntExist = 1060
     IsBusy = 1061
-    AlreadyStopped = 1062
 
 
 class Commands(Enum):
