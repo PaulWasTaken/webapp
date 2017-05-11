@@ -3,41 +3,30 @@ import argparse
 import jinja2
 import json
 
-from asyncio import sleep
 from aiohttp import web
-from collections import namedtuple
-from os import devnull
-from re import search
-from statuses import Status, ReturnCode, Commands
-from subprocess import run, PIPE
-from sys import platform, exit
-
-CommandAttrib = namedtuple("CommandAttrib", "expected, in_progress")
+from executors.unix_executor import UnixExecutor
+from executors.win_executor import WinExecutor
+from settings import Settings
+from statuses import Commands
+from sys import platform
 
 
 class WebApp(web.Application):
-    colour_map = {
-        Status.Running: "green",
-        Status.Stopped: "red",
-        Status.Unknown: "#D6CE1F",
-        Status.StopPending: "red",
-        Status.StartPending: "green"
-    }
-
-    command_attrib = {
-        Commands.Start: CommandAttrib(Status.Running, Status.StartPending),
-        Commands.Stop: CommandAttrib(Status.Stopped, Status.StopPending),
-    }
-
     def __init__(self, service):
         super().__init__()
         aiohttp_jinja2.setup(self, loader=jinja2.FileSystemLoader(''))
-        self.mode = True
-        self.service = service
-        self.service_status = Status.Unknown
-        self.colour = WebApp.colour_map[self.service_status]
+        self.settings = Settings(service)
+        self.executor = None
+        self.chose_executor()
         self.make_route_table()
-        self.notification = ""
+
+    def chose_executor(self):
+        if platform == "win32":
+            self.executor = WinExecutor(self.settings)
+        elif platform == "linux2":
+            self.executor = UnixExecutor(self.settings)
+        else:
+            raise NotImplementedError
 
     def make_route_table(self):
         self.router.add_get('/', self.base_handler)
@@ -47,110 +36,62 @@ class WebApp(web.Application):
         self.router.add_get('/check', self.check_handler)
 
     def mode_handler(self):
-        self.mode = not self.mode
+        self.settings.mode = not self.settings.mode
         with open('settings.json', 'w') as fp:
-            json.dump(self.mode, fp)
+            json.dump(self.settings.mode, fp)
 
     @aiohttp_jinja2.template('site.html')
     async def base_handler(self, request):
         parameters = request.rel_url.query
-        self.set_service_status()
+        self.executor.set_service_status()
         if "mode" in parameters:
             self.mode_handler()
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
     async def start_handler(self, request):
-        if not self.mode:
+        if not self.settings.mode:
             return self.get_fields_values()
         self.process(Commands.Start)
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
     async def reboot_handler(self, request):
-        if not self.mode:
+        if not self.settings.mode:
             return self.get_fields_values()
         self.process(Commands.Stop)
-        await self.sleep_until_stop()
+        await self.executor.sleep_until_stop()
         self.process(Commands.Start)
-        self.notification = "Reboot has been completed."
+        self.settings.notification = "Reboot has been completed."
         return self.get_fields_values()
-
-    async def sleep_until_stop(self):
-        while True:
-            await sleep(0.5)
-            self.set_service_status()
-            if self.service_status is Status.Stopped:
-                return
 
     @aiohttp_jinja2.template('site.html')
     async def stop_handler(self, request):
-        if not self.mode:
+        if not self.settings.mode:
             return self.get_fields_values()
         self.process(Commands.Stop)
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
     async def check_handler(self, request):
-        if not self.mode:
+        if not self.settings.mode:
             return self.get_fields_values()
-        self.set_service_status()
+        self.executor.set_service_status()
         return self.get_fields_values()
 
     def process(self, command):
-        self.set_service_status()
-        self.exec_command(command)
+        self.executor.set_service_status()
+        self.executor.exec_command(command)
 
     def get_fields_values(self):
-        notification = self.notification
-        self.notification = ""
+        notification = self.settings.notification
+        self.settings.notification = ""
         return {
             "notification": notification,
-            "mode": self.mode,
-            "status": self.service_status.name,
-            "color": self.colour_map[self.service_status]
+            "mode": self.settings.mode,
+            "status": self.settings.service_status.name,
+            "color": self.settings.colour
         }
-
-    def exec_command(self, command):
-        with open(devnull, 'w') as temp:
-            if self.service_status == WebApp.command_attrib[command].expected:
-                return
-            try:
-                return_code = ReturnCode(run("sc {command} {service}".format(
-                    command=command.name, service=self.service),
-                    stdout=temp, stderr=temp).returncode)
-                if not self.is_valid_code(return_code):
-                    return
-                self.check_execution()
-            except ValueError as e:
-                self.notification = "Unknown return code: {}. Please, " \
-                                    "try again.".format(e)
-                self.service_status = Status.Unknown
-
-    def check_execution(self):
-        try:
-            self.set_service_status()
-        except ValueError as e:
-            self.notification = "Unknown status type({}).".format(e)
-
-    def is_valid_code(self, return_code):
-        if return_code == ReturnCode.AccessDenied:
-            self.notification = "You should run the script " \
-                                "with administrator rights."
-        elif return_code == ReturnCode.IsBusy:
-            self.notification = "The service is busy. " \
-                                "Please, wait a little bit."
-        elif return_code == ReturnCode.DoesntExist:
-            self.notification = "The specified service does not " \
-                                "exist as an installed service."
-        else:
-            return True
-        return False
-
-    def set_service_status(self):
-        res = run("sc query {}".format(self.service), stdout=PIPE).stdout
-        status = search(b"\d+", res.split(b"\r\n")[3]).group()
-        self.service_status = Status(int(status))
 
 
 def create_parser():
@@ -166,10 +107,9 @@ if __name__ == "__main__":
     parser = create_parser()
     settings = parser.parse_args()
     app = WebApp(settings.service)
-    if platform != "win32":
-        print("This app works only for Windows.")
-        exit()
     try:
-        web.run_app(app, port=settings.port)
+        web.run_app(app, host="localhost", port=settings.port)
     except OSError:
         print("Port {} is already being used.".format(settings.port))
+    except NotImplementedError:
+        print("The platform you are trying to use is not supported.")

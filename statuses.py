@@ -9,11 +9,16 @@ class Status(Enum):
     Running = 4
 
 
-class ReturnCode(Enum):
+class WinReturnCode(Enum):
     Ok = 0
     AccessDenied = 5
     DoesntExist = 1060
     IsBusy = 1061
+    NotStarted = 1062
+
+
+class UnixReturnCode(Enum):
+    Ok = 0
 
 
 class Commands(Enum):
