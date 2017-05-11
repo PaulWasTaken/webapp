@@ -5,8 +5,25 @@ from statuses import Status, UnixReturnCode
 
 
 class UnixExecutor(Executor):
+    correspondence = {
+        "active": 4,
+        "inactive": 1
+    }
+
     def __init__(self, settings):
         super().__init__(settings)
+        self.check_state()
+
+    def check_state(self):
+        status = run("service {} status".format(self.settings.service),
+                     stdout=PIPE).stdout
+        exist = search(b"(?<=Loaded: )[^ ]+", status).group()
+        if exist == b"not-found":
+            self.settings.notification = 'The specified service does not ' \
+                                         'exist as an installed service.'
+        if exist == b"masked":
+            self.settings.notification = "The service is masked. You will " \
+                                         "not be able to manage it."
 
     def get_command_pattern(self):
         return "service {service} {command}"
@@ -15,8 +32,10 @@ class UnixExecutor(Executor):
         res = run("service {} status".format(self.settings.service),
                   stdout=PIPE)
         if self.is_valid_code(res.returncode):
-            status = search(b"\d+", res.stdout.split(b"\r\n")[3]).group()
-            self.settings.service_status = Status(int(status))
+            status = search(b"(?<=Active: )[^ ]+", res.stdout).group()
+            self.settings.service_status = Status(
+                int(UnixExecutor.correspondence[status])
+            )
 
     def is_valid_code(self, return_code):
         try:
