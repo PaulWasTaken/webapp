@@ -36,12 +36,8 @@ class Executor(ABC):
         with open(devnull, 'w') as temp:
             if self.settings.service_status in [expected, pending]:
                 return
-            return_code = run(self.get_command_pattern(
-                self.settings.service, command.name), stdout=temp,
-                stderr=temp).returncode
-            print(return_code)
-            if not self.is_valid_code(return_code):
-                return
+            run(self.get_command_pattern(self.settings.service, command.name),
+                stdout=temp, stderr=temp)
             self.set_service_status()
 
     async def sleep_until_stop(self):
