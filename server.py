@@ -54,16 +54,16 @@ class WebApp(web.Application):
     async def start_handler(self, request):
         if not self.settings.mode:
             return self.get_fields_values()
-        self.process(Commands.Start)
+        self.executor.process(Commands.Start)
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
     async def reboot_handler(self, request):
         if not self.settings.mode:
             return self.get_fields_values()
-        self.process(Commands.Stop)
+        self.executor.process(Commands.Stop)
         await self.executor.sleep_until_stop()
-        self.process(Commands.Start)
+        self.executor.process(Commands.Start)
         self.settings.notification = "Reboot has been completed."
         return self.get_fields_values()
 
@@ -71,7 +71,7 @@ class WebApp(web.Application):
     async def stop_handler(self, request):
         if not self.settings.mode:
             return self.get_fields_values()
-        self.process(Commands.Stop)
+        self.executor.process(Commands.Stop)
         return self.get_fields_values()
 
     @aiohttp_jinja2.template('site.html')
@@ -80,10 +80,6 @@ class WebApp(web.Application):
             return self.get_fields_values()
         self.executor.set_service_status()
         return self.get_fields_values()
-
-    def process(self, command):
-        self.executor.set_service_status()
-        self.executor.exec_command(command)
 
     def get_fields_values(self):
         notification = self.settings.notification

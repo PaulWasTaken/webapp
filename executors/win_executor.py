@@ -1,15 +1,34 @@
 from executors.abstract_executor import Executor
 from re import search
-from statuses import WinReturnCode, Status
+from statuses import WinReturnCode, Status, Commands
 from subprocess import run, PIPE
 
 
 class WinExecutor(Executor):
+    command_correspondence = {
+        Commands.Start: "start",
+        Commands.Stop: "stop",
+        Commands.Status: "query"
+    }
+    state_correspondence = {
+        b"1": Status.Stopped,
+        b"2": Status.StartPending,
+        b"3": Status.StopPending,
+        b"4": Status.Running
+    }
+
     def __init__(self, settings):
         super().__init__(settings)
 
-    def get_command_pattern(self, name, command):
-        return ["sc", command, name]
+    def get_state_correspondence(self, state):
+        return WinExecutor.state_correspondence[state]
+
+    def get_command_correspondence(self, command):
+        return WinExecutor.command_correspondence[command]
+
+    def get_command_pattern(self, command):
+        return ["sc", self.get_command_correspondence(command),
+                self.settings.service]
 
     def is_valid_code(self, code):
         try:
@@ -22,8 +41,8 @@ class WinExecutor(Executor):
                                              "Please, wait a little bit."
             elif return_code == WinReturnCode.DoesntExist:
                 self.settings.notification = \
-                                            'The specified service does not ' \
-                                            'exist as an installed service.'
+                    'The specified service does not ' \
+                    'exist as an installed service.'
             elif return_code == WinReturnCode.NotStarted:
                 self.settings.notification = 'The service has ' \
                                              'not been started.'
@@ -34,8 +53,5 @@ class WinExecutor(Executor):
                                          "Please, try again.".format(e)
             self.settings.service_status = Status.Unknown
 
-    def set_service_status(self):
-        res = run("sc query {}".format(self.settings.service), stdout=PIPE)
-        if self.is_valid_code(res.returncode):
-            status = search(b"\d+", res.stdout.split(b"\r\n")[3]).group()
-            self.settings.service_status = Status(int(status))
+    def extract_status(self, output):
+        return search(b"\d+", output.split(b"\r\n")[3]).group()

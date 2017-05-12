@@ -25,4 +25,4 @@ class UnixReturnCode(Enum):
 class Commands(Enum):
     Start = 0
     Stop = 1
-    Reboot = 2
+    Status = 2
