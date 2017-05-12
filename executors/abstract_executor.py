@@ -33,11 +33,15 @@ class Executor(ABC):
     def exec_command(self, command):
         expected = Executor.expected_state[command].expected
         pending = Executor.expected_state[command].in_progress
+        print(command.name)
         with open(devnull, 'w') as temp:
             if self.settings.service_status in [expected, pending]:
                 return
-            run(self.get_command_pattern(self.settings.service, command.name),
+            res = run(self.get_command_pattern(self.settings.service,
+                                           command.name),
                 stdout=temp, stderr=temp)
+            print(res.returncode)
+            print(res.stdout)
             self.set_service_status()
 
     async def sleep_until_stop(self):
