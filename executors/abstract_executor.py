@@ -3,6 +3,7 @@ from asyncio import sleep
 from collections import namedtuple
 from os.path import devnull
 from subprocess import run
+
 from statuses import Status, Commands
 
 CommandAttrib = namedtuple("CommandAttrib", "expected, in_progress")
@@ -36,8 +37,9 @@ class Executor(ABC):
             if self.settings.service_status in [expected, pending]:
                 return
             return_code = run(self.get_command_pattern().format(
-                command=command.name, service=self.settings.service),
-                stdout=temp, stderr=temp).returncode
+                command=command.name, service=self.settings.service)
+                              .split(" "),
+                              stdout=temp, stderr=temp).returncode
             if not self.is_valid_code(return_code):
                 return
             self.set_service_status()

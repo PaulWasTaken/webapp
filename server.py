@@ -23,7 +23,7 @@ class WebApp(web.Application):
     def chose_executor(self):
         if platform == "win32":
             self.executor = WinExecutor(self.settings)
-        elif platform == "linux2":
+        elif platform == "linux":
             self.executor = UnixExecutor(self.settings)
         else:
             raise NotImplementedError
