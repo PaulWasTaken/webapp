@@ -15,8 +15,8 @@ class UnixExecutor(Executor):
         self.check_state()
 
     def check_state(self):
-        status = run("service {} status".format(self.settings.service),
-                     stdout=PIPE).stdout
+        status = run("service {} status".format(
+            self.settings.service).split(" "), stdout=PIPE).stdout
         exist = search(b"(?<=Loaded: )[^ ]+", status).group()
         if exist == b"not-found":
             self.settings.notification = 'The specified service does not ' \
@@ -29,7 +29,7 @@ class UnixExecutor(Executor):
         return "service {service} {command}"
 
     def set_service_status(self):
-        res = run("service {} status".format(self.settings.service),
+        res = run("service {} status".format(self.settings.service).split(" "),
                   stdout=PIPE)
         if self.is_valid_code(res.returncode):
             status = search(b"(?<=Active: )[^ ]+", res.stdout).group()
