@@ -6,8 +6,8 @@ from statuses import Status, UnixReturnCode
 
 class UnixExecutor(Executor):
     correspondence = {
-        "active": 4,
-        "inactive": 1
+        b"active": 4,
+        b"inactive": 1
     }
 
     def __init__(self, settings):
@@ -39,8 +39,10 @@ class UnixExecutor(Executor):
 
     def is_valid_code(self, return_code):
         try:
-            UnixReturnCode(return_code)
-            return True
+            if return_code == UnixReturnCode.NotRunning:
+                self.settings.notification = "The service is not running."
+            else:
+                return True
         except ValueError as e:
             self.settings.notification = "Bad return code: {}.".format(e)
             self.settings.service_status = Status.Unknown

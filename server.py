@@ -6,6 +6,7 @@ import json
 from aiohttp import web
 from executors.unix_executor import UnixExecutor
 from executors.win_executor import WinExecutor
+from os.path import realpath, split
 from settings import Settings
 from statuses import Commands
 from sys import platform
@@ -14,7 +15,8 @@ from sys import platform
 class WebApp(web.Application):
     def __init__(self, service):
         super().__init__()
-        aiohttp_jinja2.setup(self, loader=jinja2.FileSystemLoader(''))
+        aiohttp_jinja2.setup(self, loader=jinja2.
+                             FileSystemLoader(split(realpath(__file__))[0]))
         self.settings = Settings(service)
         self.executor = None
         self.chose_executor()

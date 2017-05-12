@@ -19,6 +19,7 @@ class WinReturnCode(Enum):
 
 class UnixReturnCode(Enum):
     Ok = 0
+    NotRunning = 3
 
 
 class Commands(Enum):
