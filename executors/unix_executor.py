@@ -32,6 +32,8 @@ class UnixExecutor(Executor):
         res = run("service {} status".format(self.settings.service).split(" "),
                   stdout=PIPE)
         if self.is_valid_code(res.returncode):
+            print(res.returncode)
+            print(res.stdout)
             status = search(b"(?<=Active: )[^ ]+", res.stdout).group()
             self.settings.service_status = Status(
                 int(UnixExecutor.correspondence[status])
