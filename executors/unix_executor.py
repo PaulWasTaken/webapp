@@ -26,7 +26,7 @@ class UnixExecutor(Executor):
                                          "not be able to manage it."
 
     def get_command_pattern(self, name, command):
-        return ["service", name, command]
+        return ["service", name, command.lower()]
 
     def set_service_status(self):
         res = run("service {} status".format(self.settings.service).split(" "),
