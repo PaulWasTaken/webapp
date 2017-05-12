@@ -96,10 +96,12 @@ class WebApp(web.Application):
 
 def create_parser():
     p = argparse.ArgumentParser()
-    p.add_argument("-p", "--port", type=int,
+    p.add_argument("service", help="Set service you want to manage.",
+                   metavar="service")
+    p.add_argument("-p", type=int,
                    help="Set port value.", dest="port", default=8080)
-    p.add_argument("-s", "--service", help="Set service you want to manage.",
-                   dest="service", default="browser")
+    p.add_argument("-i", type=str, help="Set ip address.",
+                   dest="ip", default="localhost")
     return p
 
 
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     settings = parser.parse_args()
     app = WebApp(settings.service)
     try:
-        web.run_app(app, host="localhost", port=settings.port)
+        web.run_app(app, host=settings.ip, port=settings.port)
     except OSError:
         print("Port {} is already being used.".format(settings.port))
     except NotImplementedError:
