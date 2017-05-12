@@ -8,8 +8,8 @@ class WinExecutor(Executor):
     def __init__(self, settings):
         super().__init__(settings)
 
-    def get_command_pattern(self):
-        return "sc {command} {service}"
+    def get_command_pattern(self, name, command):
+        return ["sc", command, name]
 
     def is_valid_code(self, code):
         try:

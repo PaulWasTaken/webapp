@@ -25,8 +25,8 @@ class UnixExecutor(Executor):
             self.settings.notification = "The service is masked. You will " \
                                          "not be able to manage it."
 
-    def get_command_pattern(self):
-        return "service {service} {command}"
+    def get_command_pattern(self, name, command):
+        return ["service", name, command]
 
     def set_service_status(self):
         res = run("service {} status".format(self.settings.service).split(" "),
